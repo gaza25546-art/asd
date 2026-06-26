@@ -24,6 +24,7 @@ interface ScrapedArticle {
   ai_draft_id: string | null;
   source_id: string;
   news_sources?: { name: string };
+  is_duplicate?: boolean;
 }
 
 interface AIDraft {
@@ -41,6 +42,8 @@ interface AIDraft {
   rejection_reason: string;
   created_at: string;
   scraped_article_id: string;
+  related_sources: { source: string; url: string; title: string }[];
+  dedup_group_id: string | null;
 }
 
 export default function AdminAIApprovalsPage() {
@@ -303,6 +306,25 @@ export default function AdminAIApprovalsPage() {
                     <p className="text-sm text-muted-foreground">{selectedDraft.meta_description}</p>
                   </div>
                 </div>
+                {/* Related Sources from deduplication */}
+                {selectedDraft.related_sources && selectedDraft.related_sources.length > 0 && (
+                  <div>
+                    <p className="text-xs uppercase tracking-wider text-muted-foreground mb-1 flex items-center gap-2">
+                      <Globe className="h-3 w-3" /> Related Sources ({selectedDraft.related_sources.length})
+                    </p>
+                    <div className="space-y-2">
+                      {selectedDraft.related_sources.map((src, idx) => (
+                        <div key={idx} className="flex items-center gap-2 p-2 rounded bg-blue-50/50 dark:bg-blue-950/20 text-sm">
+                          <Badge variant="outline" className="text-[10px] shrink-0">{src.source}</Badge>
+                          <a href={src.url} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline truncate flex items-center gap-1">
+                            {src.title || src.url} <ExternalLink className="h-3 w-3 shrink-0" />
+                          </a>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
                 <div>
                   <p className="text-xs uppercase tracking-wider text-muted-foreground mb-1">Summary</p>
                   <p className="text-sm bg-muted/30 p-3 rounded-lg">{selectedDraft.ai_summary}</p>
@@ -466,6 +488,14 @@ function DraftList({ drafts, scraped, onSelect, loading, emptyMessage }: {
                   <Badge variant="outline" className="text-[10px] flex items-center gap-1">
                     <Globe className="h-2 w-2" /> {source.news_sources?.name || 'Unknown'}
                   </Badge>
+                )}
+                {draft.related_sources && draft.related_sources.length > 0 && (
+                  <Badge variant="secondary" className="text-[10px] bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300 flex items-center gap-1">
+                    <Globe className="h-2 w-2" /> +{draft.related_sources.length} source{draft.related_sources.length > 1 ? 's' : ''}
+                  </Badge>
+                )}
+                {source?.is_duplicate && (
+                  <Badge variant="outline" className="text-[10px] text-amber-600 border-amber-300">Duplicate</Badge>
                 )}
               </div>
               <h3 className="font-medium truncate">{draft.suggested_headline || 'Untitled'}</h3>
