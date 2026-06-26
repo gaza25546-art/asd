@@ -5,7 +5,7 @@ import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { supabase } from '@/lib/supabase';
-import { FileText, RefreshCw, Webhook, Plus, Trash2 } from 'lucide-react';
+import { FileText, RefreshCw, Webhook, Plus, Trash2, Bot, Globe, Copy, CircleCheck as CheckCircle2, TriangleAlert as AlertTriangle } from 'lucide-react';
 import { toast } from 'sonner';
 import { logAdminAction } from '@/components/admin/admin-layout';
 import { Input } from '@/components/ui/input';
@@ -50,6 +50,60 @@ export default function AdminAutomationPage() {
       <div className="mb-6 flex items-center justify-between">
         <div><h1 className="font-display text-2xl font-bold">Automation Logs</h1><p className="text-sm text-muted-foreground">Make.com integration and webhook management</p></div>
         <Button variant="outline" size="sm" onClick={loadData}><RefreshCw className="mr-2 h-4 w-4" /> Refresh</Button>
+      </div>
+
+      {/* AI News Collection Setup */}
+      <div className="mb-8">
+        <h2 className="font-display text-lg font-bold mb-4 flex items-center gap-2"><Bot className="h-5 w-5 text-primary" /> AI News Collection Setup</h2>
+        <Card className="p-5 border-border/40 mb-4">
+          <div className="space-y-4">
+            <div className="flex items-start gap-3">
+              <CheckCircle2 className="h-5 w-5 text-green-500 mt-0.5" />
+              <div>
+                <p className="font-medium">Step 1: Configure Make.com Scenario</p>
+                <p className="text-sm text-muted-foreground">Create a Make.com scenario that watches RSS feeds from NSO, DVSC, NB1.hu, CsakFoci, etc.</p>
+              </div>
+            </div>
+            <div className="flex items-start gap-3">
+              <CheckCircle2 className="h-5 w-5 text-green-500 mt-0.5" />
+              <div>
+                <p className="font-medium">Step 2: Connect to DVSC Webhook</p>
+                <p className="text-sm text-muted-foreground">Use the HTTP module to POST article data to the webhook below.</p>
+                <div className="mt-2 p-3 bg-muted rounded-lg font-mono text-xs break-all">
+                  {typeof window !== 'undefined' ? `${window.location.origin}/api/ai-webhook` : 'https://your-domain.com/api/ai-webhook'}
+                </div>
+              </div>
+            </div>
+            <div className="flex items-start gap-3">
+              <CheckCircle2 className="h-5 w-5 text-green-500 mt-0.5" />
+              <div>
+                <p className="font-medium">Step 3: AI Processing</p>
+                <p className="text-sm text-muted-foreground">The webhook receives the article, AI rewrites it, and places it in the approval queue.</p>
+              </div>
+            </div>
+            <div className="flex items-start gap-3">
+              <AlertTriangle className="h-5 w-5 text-amber-500 mt-0.5" />
+              <div>
+                <p className="font-medium">Step 4: Your Approval Required</p>
+                <p className="text-sm text-muted-foreground">Go to <strong>AI Approvals</strong> page to review and approve/reject each article before it goes live.</p>
+              </div>
+            </div>
+          </div>
+        </Card>
+
+        <Card className="p-4 border-border/40 mb-4 bg-primary/5">
+          <h3 className="font-medium mb-2 flex items-center gap-2"><Globe className="h-4 w-4" /> Make.com HTTP Module Payload Format</h3>
+          <pre className="text-xs bg-muted p-3 rounded-lg overflow-x-auto">
+{`{
+  "title": "Article title from RSS",
+  "url": "https://original-article-url.com",
+  "content": "Full article text content",
+  "description": "Article summary or excerpt",
+  "source": "NSO",
+  "sourceUrl": "https://www.nemzetisport.hu"
+}`}
+          </pre>
+        </Card>
       </div>
 
       {/* Webhooks */}
