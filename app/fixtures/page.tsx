@@ -2,7 +2,8 @@ import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { SectionHeader } from '@/components/section-header';
 import { supabase } from '@/lib/supabase';
-import { Calendar, MapPin, Clock } from 'lucide-react';
+import { Calendar, MapPin, Clock, RefreshCw } from 'lucide-react';
+import { SyncButton } from '@/components/sync-button';
 
 export const metadata = { title: 'Fixtures & Results | DVSC' };
 
@@ -17,7 +18,10 @@ export default async function FixturesPage() {
 
   return (
     <div className="mx-auto w-full max-w-5xl px-4 py-12 lg:px-8">
-      <SectionHeader title="Fixtures & Results" subtitle="Match schedule and scores" />
+      <div className="flex items-center justify-between mb-6">
+        <SectionHeader title="Fixtures & Results" subtitle="Match schedule and scores" />
+        <SyncButton entity="fixtures" />
+      </div>
 
       {/* Upcoming */}
       <div className="mb-12">
@@ -33,9 +37,19 @@ export default async function FixturesPage() {
                   <span className="font-display text-lg font-bold leading-none">{new Date(match.match_date).getDate()}</span>
                 </div>
                 <div>
-                  <p className="font-display text-lg font-bold">
-                    DVSC <span className="text-muted-foreground text-sm font-normal">vs</span> {match.opponent}
-                  </p>
+                  <div className="flex items-center gap-2">
+                    {match.opponent_badge_url && (
+                      <img
+                        src={match.opponent_badge_url}
+                        alt={match.opponent}
+                        className="h-6 w-6 object-contain"
+                        loading="lazy"
+                      />
+                    )}
+                    <p className="font-display text-lg font-bold">
+                      DVSC <span className="text-muted-foreground text-sm font-normal">vs</span> {match.opponent}
+                    </p>
+                  </div>
                   <div className="flex flex-wrap gap-3 text-xs text-muted-foreground mt-1">
                     <Badge variant="outline">{match.competition}</Badge>
                     <span className="flex items-center gap-1"><MapPin className="h-3 w-3" /> {match.venue}</span>
@@ -46,6 +60,9 @@ export default async function FixturesPage() {
               <Badge variant="secondary" className="w-fit">{match.home_away === 'home' ? 'Home' : 'Away'}</Badge>
             </Card>
           ))}
+          {upcoming.length === 0 && (
+            <p className="text-sm text-muted-foreground">No upcoming fixtures scheduled.</p>
+          )}
         </div>
       </div>
 
@@ -67,9 +84,19 @@ export default async function FixturesPage() {
                     {won ? 'W' : lost ? 'L' : 'D'}
                   </div>
                   <div>
-                    <p className="font-display text-lg font-bold">
-                      DVSC vs {match.opponent}
-                    </p>
+                    <div className="flex items-center gap-2">
+                      {match.opponent_badge_url && (
+                        <img
+                          src={match.opponent_badge_url}
+                          alt={match.opponent}
+                          className="h-6 w-6 object-contain"
+                          loading="lazy"
+                        />
+                      )}
+                      <p className="font-display text-lg font-bold">
+                        DVSC vs {match.opponent}
+                      </p>
+                    </div>
                     <div className="flex flex-wrap gap-3 text-xs text-muted-foreground mt-1">
                       <Badge variant="outline">{match.competition}</Badge>
                       <span>{new Date(match.match_date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}</span>
@@ -86,6 +113,9 @@ export default async function FixturesPage() {
               </Card>
             );
           })}
+          {completed.length === 0 && (
+            <p className="text-sm text-muted-foreground">No completed matches yet.</p>
+          )}
         </div>
       </div>
     </div>

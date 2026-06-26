@@ -6,7 +6,7 @@ import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { supabase } from '@/lib/supabase';
-import { Newspaper, Users, MessageSquare, Calendar, Vote, Bot, FileText, TrendingUp, ArrowRight } from 'lucide-react';
+import { Newspaper, Users, MessageSquare, Calendar, Vote, Bot, FileText, TrendingUp, ArrowRight, RefreshCw, Globe } from 'lucide-react';
 
 export default function AdminDashboard() {
   const [stats, setStats] = useState({
@@ -22,6 +22,7 @@ export default function AdminDashboard() {
     predictions: 0,
   });
   const [recentLogs, setRecentLogs] = useState<any[]>([]);
+  const [syncMeta, setSyncMeta] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -65,6 +66,12 @@ export default function AdminDashboard() {
       .order('created_at', { ascending: false })
       .limit(5);
     setRecentLogs(logs ?? []);
+
+    const { data: meta } = await supabase
+      .from('api_sync_metadata')
+      .select('*')
+      .order('last_synced_at', { ascending: false });
+    setSyncMeta(meta ?? []);
 
     setLoading(false);
   };
@@ -148,6 +155,35 @@ export default function AdminDashboard() {
                 <ArrowRight className="h-4 w-4 text-muted-foreground group-hover:text-primary transition-colors" />
               </Card>
             </Link>
+          </div>
+
+          {/* TheSportsDB Sync Status */}
+          <div className="mt-8">
+            <h2 className="font-display text-xl font-bold mb-4 flex items-center gap-2">
+              <Globe className="h-5 w-5 text-primary" /> TheSportsDB Sync Status
+            </h2>
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+              {syncMeta.length > 0 ? syncMeta.map((meta) => (
+                <Card key={meta.id} className="p-4 border-border/40">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-sm font-medium capitalize">{meta.entity_type}</span>
+                    <Badge variant={meta.sync_status === 'success' ? 'default' : 'destructive'}>
+                      {meta.sync_status}
+                    </Badge>
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    Last synced: {new Date(meta.last_synced_at).toLocaleString('en-GB')}
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    Records: {meta.records_synced}
+                  </p>
+                </Card>
+              )) : (
+                <Card className="p-4 border-border/40 col-span-3">
+                  <p className="text-sm text-muted-foreground">No sync data yet. Use the Sync buttons on Fixtures, Table, or Squad pages to fetch live data from TheSportsDB.</p>
+                </Card>
+              )}
+            </div>
           </div>
 
           {/* Recent Automation Activity */}

@@ -9,7 +9,7 @@ import { Label } from '@/components/ui/label';
 import { supabase } from '@/lib/supabase';
 import { logAdminAction } from '@/components/admin/admin-layout';
 import { toast } from 'sonner';
-import { Plus, Edit, Trash2, X, Check, Calendar } from 'lucide-react';
+import { Plus, CreditCard as Edit, Trash2, X, Check, Calendar, RefreshCw } from 'lucide-react';
 
 interface Fixture {
   id: string;
@@ -21,6 +21,8 @@ interface Fixture {
   status: string;
   dvsc_score: number | null;
   opponent_score: number | null;
+  api_event_id?: string;
+  opponent_badge_url?: string;
 }
 
 export default function AdminMatchesPage() {
@@ -29,6 +31,7 @@ export default function AdminMatchesPage() {
   const [editing, setEditing] = useState<Fixture | null>(null);
   const [creating, setCreating] = useState(false);
   const [form, setForm] = useState<Partial<Fixture>>({});
+  const [syncing, setSyncing] = useState(false);
 
   useEffect(() => { loadFixtures(); }, []);
 
@@ -56,6 +59,23 @@ export default function AdminMatchesPage() {
     if (!confirm('Delete this fixture?')) return;
     await supabase.from('fixtures').delete().eq('id', id);
     toast.success('Deleted.'); logAdminAction('delete_fixture', 'fixtures', id); loadFixtures();
+  };
+
+  const handleSync = async () => {
+    setSyncing(true);
+    try {
+      const response = await fetch('/api/sync-thesportsdb?entity=fixtures', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || 'Sync failed');
+      toast.success(`Synced ${data.synced.fixtures.count} fixtures from TheSportsDB!`);
+      loadFixtures();
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to sync');
+    }
+    setSyncing(false);
   };
 
   if (editing || creating) {
@@ -100,7 +120,13 @@ export default function AdminMatchesPage() {
     <div>
       <div className="mb-6 flex items-center justify-between">
         <div><h1 className="font-display text-2xl font-bold">Match Management</h1><p className="text-sm text-muted-foreground">Manage fixtures and results</p></div>
-        <Button onClick={() => { setCreating(true); setForm({ home_away: 'home', status: 'scheduled' }); }}><Plus className="mr-2 h-4 w-4" /> New Fixture</Button>
+        <div className="flex items-center gap-2">
+          <Button variant="outline" onClick={handleSync} disabled={syncing}>
+            <RefreshCw className={`mr-2 h-4 w-4 ${syncing ? 'animate-spin' : ''}`} />
+            {syncing ? 'Syncing...' : 'Sync from TheSportsDB'}
+          </Button>
+          <Button onClick={() => { setCreating(true); setForm({ home_away: 'home', status: 'scheduled' }); }}><Plus className="mr-2 h-4 w-4" /> New Fixture</Button>
+        </div>
       </div>
       {loading ? <p className="text-muted-foreground">Loading...</p> : (
         <div className="space-y-3">
@@ -111,8 +137,14 @@ export default function AdminMatchesPage() {
                   <Badge variant={f.status === 'finished' ? 'default' : f.status === 'live' ? 'destructive' : 'outline'}>{f.status}</Badge>
                   <Badge variant="outline">{f.competition}</Badge>
                   <Badge variant="secondary">{f.home_away}</Badge>
+                  {f.api_event_id && <Badge variant="outline" className="text-[10px] border-primary/30 text-primary">API</Badge>}
                 </div>
-                <p className="font-medium">DVSC vs {f.opponent}</p>
+                <div className="flex items-center gap-2">
+                  {f.opponent_badge_url && (
+                    <img src={f.opponent_badge_url} alt={f.opponent} className="h-5 w-5 object-contain" />
+                  )}
+                  <p className="font-medium">DVSC vs {f.opponent}</p>
+                </div>
                 <p className="text-xs text-muted-foreground">{new Date(f.match_date).toLocaleString('en-GB')} - {f.venue}</p>
                 {f.status === 'finished' && <p className="text-sm font-bold mt-1">{f.dvsc_score} - {f.opponent_score}</p>}
               </div>
