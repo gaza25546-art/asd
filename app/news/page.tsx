@@ -11,7 +11,7 @@ export default async function NewsPage() {
   const { data: articles } = await supabase
     .from('news_articles')
     .select('*')
-    .order('published_at', { ascending: false });
+    .order('approved_at', { ascending: false });
 
   const featured = articles?.[0];
   const rest = articles?.slice(1) ?? [];
@@ -45,8 +45,8 @@ export default async function NewsPage() {
                 </span>
                 <span className="flex items-center gap-1">
                   <Calendar className="h-4 w-4" />
-                  {new Date(featured.published_at).toLocaleDateString('en-GB', {
-                    day: 'numeric', month: 'long', year: 'numeric',
+                  {new Date(featured.approved_at || featured.published_at).toLocaleDateString('hu-HU', {
+                    year: 'numeric', month: 'long', day: 'numeric',
                   })}
                 </span>
               </div>
@@ -72,8 +72,8 @@ export default async function NewsPage() {
               </div>
               <div className="p-5">
                 <p className="text-xs text-muted-foreground mb-2">
-                  {new Date(article.published_at).toLocaleDateString('en-GB', {
-                    day: 'numeric', month: 'short', year: 'numeric',
+                  {new Date(article.approved_at || article.published_at).toLocaleDateString('hu-HU', {
+                    year: 'numeric', month: 'short', day: 'numeric',
                   })}
                 </p>
                 <h3 className="font-display text-lg font-bold leading-tight group-hover:text-primary transition-colors line-clamp-2">

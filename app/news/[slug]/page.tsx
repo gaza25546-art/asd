@@ -15,7 +15,7 @@ export async function generateStaticParams() {
 export async function generateMetadata({ params }: { params: { slug: string } }) {
   const { data: article } = await supabase
     .from('news_articles')
-    .select('title, excerpt, seo_title, meta_description, image_url, published_at, author')
+    .select('title, excerpt, seo_title, meta_description, image_url, published_at, approved_at, author')
     .eq('slug', params.slug)
     .maybeSingle();
 
@@ -28,7 +28,7 @@ export async function generateMetadata({ params }: { params: { slug: string } })
       title: article.seo_title || article.title,
       description: article.meta_description || article.excerpt,
       type: 'article',
-      publishedTime: article.published_at,
+      publishedTime: article.approved_at || article.published_at,
       authors: [article.author],
       images: [{ url: article.image_url }],
     },
@@ -56,7 +56,7 @@ export default async function ArticlePage({ params }: { params: { slug: string }
     headline: article.title,
     description: article.excerpt,
     image: article.image_url,
-    datePublished: article.published_at,
+    datePublished: article.approved_at || article.published_at,
     author: { '@type': 'Organization', name: article.author },
     publisher: { '@type': 'Organization', name: 'DVSC Fan Portal' },
   };
@@ -65,7 +65,7 @@ export default async function ArticlePage({ params }: { params: { slug: string }
     .from('news_articles')
     .select('*')
     .neq('id', article.id)
-    .order('published_at', { ascending: false })
+    .order('approved_at', { ascending: false })
     .limit(3);
 
   return (
@@ -92,8 +92,8 @@ export default async function ArticlePage({ params }: { params: { slug: string }
           </span>
           <span className="flex items-center gap-1">
             <Calendar className="h-4 w-4" />
-            {new Date(article.published_at).toLocaleDateString('en-GB', {
-              day: 'numeric', month: 'long', year: 'numeric',
+            {new Date(article.approved_at || article.published_at).toLocaleDateString('hu-HU', {
+              year: 'numeric', month: 'long', day: 'numeric',
             })}
           </span>
         </div>

@@ -25,6 +25,8 @@ interface ScrapedArticle {
   source_id: string;
   news_sources?: { name: string };
   is_duplicate?: boolean;
+  published_at: string | null;
+  cover_image_url: string | null;
 }
 
 interface AIDraft {
@@ -44,6 +46,8 @@ interface AIDraft {
   scraped_article_id: string;
   related_sources: { source: string; url: string; title: string }[];
   dedup_group_id: string | null;
+  published_at: string | null;
+  cover_image_url: string | null;
 }
 
 export default function AdminAIApprovalsPage() {
@@ -91,12 +95,16 @@ export default function AdminAIApprovalsPage() {
     const slug = (draft.suggested_headline || 'ai-article').toLowerCase()
       .replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
 
+    const now = new Date().toISOString();
+    const { data: userData } = await supabase.auth.getUser();
+    const adminId = userData?.user?.id;
+
     const { error } = await supabase.from('news_articles').insert({
       title: draft.suggested_headline,
       slug: slug + '-' + Date.now().toString(36),
       excerpt: draft.ai_summary || draft.generated_content.slice(0, 150),
       content: draft.generated_content,
-      image_url: draft.image_suggestion || 'https://images.pexels.com/photos/46798/the-ball-stadion-football-the-pitch-46798.jpeg',
+      image_url: draft.cover_image_url || draft.image_suggestion || 'https://images.pexels.com/photos/46798/the-ball-stadion-football-the-pitch-46798.jpeg',
       category: 'AI Generated',
       author: 'AI Editorial',
       status: 'published',
@@ -105,6 +113,8 @@ export default function AdminAIApprovalsPage() {
       seo_title: draft.seo_title,
       meta_description: draft.meta_description,
       source_info: draft.source_info,
+      approved_at: now,
+      approved_by: adminId,
     });
 
     if (error) {
@@ -115,10 +125,9 @@ export default function AdminAIApprovalsPage() {
     await supabase.from('ai_drafts').update({
       status: 'approved',
       review_status: 'approved',
-      reviewed_at: new Date().toISOString(),
+      reviewed_at: now,
     }).eq('id', draft.id);
 
-    // Update scraped article status too
     if (draft.scraped_article_id) {
       await supabase.from('scraped_articles').update({ status: 'approved' }).eq('id', draft.scraped_article_id);
     }
@@ -135,12 +144,16 @@ export default function AdminAIApprovalsPage() {
     const slug = (editForm.suggested_headline || '').toLowerCase()
       .replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
 
+    const now = new Date().toISOString();
+    const { data: userData } = await supabase.auth.getUser();
+    const adminId = userData?.user?.id;
+
     const { error } = await supabase.from('news_articles').insert({
       title: editForm.suggested_headline,
       slug: slug + '-' + Date.now().toString(36),
       excerpt: editForm.ai_summary || (editForm.generated_content || '').slice(0, 150),
       content: editForm.generated_content,
-      image_url: editForm.image_suggestion || 'https://images.pexels.com/photos/46798/the-ball-stadion-football-the-pitch-46798.jpeg',
+      image_url: editForm.image_suggestion || selectedDraft.cover_image_url || 'https://images.pexels.com/photos/46798/the-ball-stadion-football-the-pitch-46798.jpeg',
       category: 'AI Generated',
       author: 'AI Editorial',
       status: 'published',
@@ -148,6 +161,8 @@ export default function AdminAIApprovalsPage() {
       ai_summary: editForm.ai_summary,
       seo_title: editForm.seo_title,
       meta_description: editForm.meta_description,
+      approved_at: now,
+      approved_by: adminId,
     });
 
     if (error) {
@@ -158,7 +173,7 @@ export default function AdminAIApprovalsPage() {
     await supabase.from('ai_drafts').update({
       status: 'approved',
       review_status: 'approved',
-      reviewed_at: new Date().toISOString(),
+      reviewed_at: now,
     }).eq('id', selectedDraft.id);
 
     if (selectedDraft.scraped_article_id) {
@@ -243,12 +258,23 @@ export default function AdminAIApprovalsPage() {
                 </a>
               </p>
               <p><span className="text-muted-foreground">Scraped:</span> {new Date(relatedScraped.scraped_at).toLocaleString('en-GB')}</p>
+              {relatedScraped.published_at && (
+                <p><span className="text-muted-foreground">Original Published:</span> {new Date(relatedScraped.published_at).toLocaleString('en-GB')}</p>
+              )}
             </div>
             {relatedScraped.original_excerpt && (
               <div className="mt-2 p-2 rounded bg-muted/50 text-xs text-muted-foreground">
                 <strong>Original excerpt:</strong> {relatedScraped.original_excerpt}
               </div>
             )}
+          </Card>
+        )}
+
+        {/* Cover Image Preview */}
+        {selectedDraft.cover_image_url && (
+          <Card className="p-4 border-border/40 mb-4">
+            <h3 className="text-sm font-bold mb-2">Cover Image</h3>
+            <img src={selectedDraft.cover_image_url} alt="Cover" className="w-full max-h-64 object-cover rounded-lg" />
           </Card>
         )}
 
